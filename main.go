@@ -14,16 +14,18 @@ func init(){
 }
 
 func main(){
-	r := gin.Default()
+	router := gin.Default()
 
 	db := app.InitDB()
-	r.GET("/ping", func(c * gin.Context){
+	app.SetupRoutes(router)
+	
+	router.GET("/ping", func(c * gin.Context){
 			
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong!",
 		})
 	})
-	r.POST("/pong", func(c * gin.Context){
+	router.POST("/pong", func(c * gin.Context){
 		var user models.User
 
 		user.Username= "Test"
@@ -46,5 +48,5 @@ func main(){
 		})
 	})
 
-	r.Run()
+	router.Run()
 }

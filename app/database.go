@@ -21,9 +21,8 @@ func InitDB() *gorm.DB{
 	
 	if err != nil {
 		panic(err)
-	}
+	}	
 
-	
 	db.Debug().AutoMigrate(&models.User{}, &models.Photo{})
 
 	return db
