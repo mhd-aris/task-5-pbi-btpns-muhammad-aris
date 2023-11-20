@@ -13,17 +13,10 @@ func init(){
 	config.Load()
 }
 
-
-
-
 func main(){
 	r := gin.Default()
 
 	db := app.InitDB()
-	if err := app.MigrateDB(db); err != nil {
-		panic(err)
-	}
-
 	r.GET("/ping", func(c * gin.Context){
 			
 		c.JSON(http.StatusOK, gin.H{

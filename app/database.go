@@ -22,13 +22,9 @@ func InitDB() *gorm.DB{
 	if err != nil {
 		panic(err)
 	}
+
 	
-	db.Debug()
+	db.Debug().AutoMigrate(&models.User{}, &models.Photo{})
+
 	return db
-}
-
-func MigrateDB(db *gorm.DB) error{
-	db.AutoMigrate(&models.User{})
-
-	return nil
 }
