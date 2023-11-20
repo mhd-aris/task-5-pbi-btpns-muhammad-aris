@@ -1,0 +1,13 @@
+# Compiled binary
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go related
+*.log
+*.out
+
+# Environment variable file
+.env
