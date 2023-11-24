@@ -19,12 +19,6 @@ This is a final project of the [Project-Based Virtual Intern: Fullstack Develope
     cd task-5-pbi-btpns-muhammad-aris
     ```
 
-3. Install dependencies:
-
-    ```bash
-    go mod tidy
-    ```
-
 ## Configuration
 
 1. Create a copy of the `.env.sample` file and name it `.env`:
