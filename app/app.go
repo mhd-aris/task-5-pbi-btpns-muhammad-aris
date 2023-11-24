@@ -9,9 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
+type App struct {
+	DB *gorm.DB
+}
 
 
-func InitDB() *gorm.DB{
+
+func NewApp() *App{
+	db := initDB()
+	
+	return &App{DB: db}
+}
+
+
+func initDB() *gorm.DB{
 	dbConfig := config.GetDatabaseConfig()
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=require TimeZone=Asia/Jakarta",
@@ -20,10 +31,14 @@ func InitDB() *gorm.DB{
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	
 	if err != nil {
-		panic(err)
-	}	
+        panic("Failed to connect to database")
+    }
 
-	db.Debug().AutoMigrate(&models.User{}, &models.Photo{})
+	err = db.Debug().AutoMigrate(&models.User{}, &models.Photo{})
+	if err != nil {
+        panic("Failed to migrate database")
+    }
 
 	return db
 }
+

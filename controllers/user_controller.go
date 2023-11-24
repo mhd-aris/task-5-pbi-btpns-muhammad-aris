@@ -4,23 +4,46 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/app"
 	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/models"
 )
 
-func CreateUser(c *gin.Context){
-	var user models.User
+type UserController struct{
+	App *app.App
+}
 
-	if err := c.ShouldBindJSON(&user); err != nil{
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success" : false,
-			"message" : "Request body not valid!",
-			"data" : nil,
-		})
+func NewUserController(myApp *app.App) *UserController {
+	return &UserController{
+		App: myApp,
+	}
+}
+
+
+func (c *UserController) CreateUser(ctx *gin.Context) {
+	var userInput models.User
+	if err := ctx.ShouldBindJSON(&userInput); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{
-		"success" : true,
-		"message" : "User created!",
-		"data" : user,
+
+	user := models.User{
+		Username: userInput.Username,
+		Email:    userInput.Email,
+		Password: userInput.Password,
+	}
+
+	result := c.App.DB.Create(&user)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, user)
+
+}
+
+func (c *UserController) GetUser(ctx *gin.Context){
+	ctx.JSON(http.StatusOK, gin.H{
+		"message" : "Hello",
 	})
 }
