@@ -31,3 +31,7 @@ func GetDatabaseConfig() DatabaseConfig{
 		Port: os.Getenv("DB_PORT"),
 	}
 }
+
+func GetSecretKey() string{
+	return os.Getenv("SECRET_KEY")
+}
