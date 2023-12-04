@@ -4,96 +4,123 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-
-	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/app"
 	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/helpers"
 	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/models"
+	"gorm.io/gorm"
 )
 
 type UserController struct {
-    App *app.AppContext
+	DB *gorm.DB
 }
 
-
-
-
-func (c *UserController) Register (ctx *gin.Context) {
-	var userInput models.User
-	if err := ctx.ShouldBindJSON(&userInput); err != nil {
+func (uc *UserController) RegisterUser(ctx *gin.Context) {
+	var newUser models.User
+	if err := ctx.ShouldBindJSON(&newUser); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-		if err := helpers.ValidateUser(userInput); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-	
-	existingUser := models.User{}
-	result := c.App.DB.Where("email = ?", userInput.Email).First(&existingUser)
-	if result.RowsAffected > 0 {
-		ctx.JSON(http.StatusConflict, gin.H{"error": "Email is already registered"})
+	if err := helpers.ValidateStruct(newUser); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	hashedPassword, err := helpers.HashPassword(userInput.Password)
+	var existingUser models.User
+	if err := uc.DB.Where("email = ?", newUser.Email).First(&existingUser).Error; err == nil {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		return
+	}
+
+	hashedPassword, err := helpers.HashPassword(newUser.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
-		return
-	}
-	
-	// Create a new user
-	newUser := models.User{
-		Username:  userInput.Username,
-		Email:     userInput.Email,
-		Password:  string(hashedPassword),
-	}
-
-	result = c.App.DB.Create(&newUser)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+	newUser.Password = hashedPassword
 
+	uc.DB.Create(&newUser)
+
+	token, err := helpers.GenerateToken(newUser.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"token": token})
 }
 
-func (c *UserController) Login(ctx *gin.Context) {
-	var loginInput app.LoginInput
-	if err := ctx.ShouldBindJSON(&loginInput); err != nil {
+func (uc *UserController) LoginUser(ctx *gin.Context) {
+	var loginUser models.User
+	if err := ctx.ShouldBindJSON(&loginUser); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-		if err := helpers.ValidateLoginInput(loginInput); err != nil {
+	if err := helpers.ValidateStruct(loginUser); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var user models.User
-	result := c.App.DB.Where("email = ?", loginInput.Email).First(&user)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	var existingUser models.User
+	if err := uc.DB.Where("email = ?", loginUser.Email).First(&existingUser).Error; err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	if match := helpers.CheckPasswordHash(loginInput.Password, user.Password); match != true {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	if !helpers.CheckPasswordHash(loginUser.Password, existingUser.Password) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	secretKey := []byte("your_secret_key") 
-	token, err := helpers.GenerateJWT(user.ID, secretKey)
+	token, err := helpers.GenerateToken(existingUser.ID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT token"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func (uc *UserController) UpdateUser(ctx *gin.Context) {
+	userID := ctx.Param("userId")
+
+	var existingUser models.User
+	if err := uc.DB.Where("id = ?", userID).First(&existingUser).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var updatedUser models.User
+	if err := ctx.ShouldBindJSON(&updatedUser); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := helpers.ValidateStruct(updatedUser); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	existingUser.Username = updatedUser.Username
+	existingUser.Email = updatedUser.Email
+	existingUser.Password = updatedUser.Password
+
+	uc.DB.Save(&existingUser)
+
+	ctx.JSON(http.StatusOK, existingUser)
+}
+
+func (uc *UserController) DeleteUser(ctx *gin.Context) {
+	userID := ctx.Param("userId")
+
+	var existingUser models.User
+	if err := uc.DB.Where("id = ?", userID).First(&existingUser).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	uc.DB.Delete(&existingUser)
+
+	ctx.JSON(http.StatusNoContent, nil)
 }
