@@ -51,7 +51,7 @@ This is a final project of the [Project-Based Virtual Intern: Fullstack Develope
     or
 
     ```bash
-    go run cmd/main.go
+    go run app/main.go
     ```
 
 3. The project will run at `http://localhost:8080` or the configured port.
