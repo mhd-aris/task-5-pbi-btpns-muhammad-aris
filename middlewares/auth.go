@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/mhd-aris/task-5-pbi-btpns-muhammad-aris/helpers"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -29,7 +30,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString = splitToken[1]
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte("TEST"), nil
+			return []byte(helpers.GetSecretKey()), nil
 		})
 
 		if err != nil || !token.Valid {

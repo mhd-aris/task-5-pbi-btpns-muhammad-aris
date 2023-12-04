@@ -12,3 +12,6 @@ tmp/
 
 # Environment variable file
 .env
+
+# static dir
+uploads

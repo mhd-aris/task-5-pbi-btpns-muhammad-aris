@@ -27,8 +27,8 @@ func (user *User) BeforeCreate(tx *gorm.DB) error {
 
 type Photo struct {
 	ID        UUIDString `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
-	Title     string     `gorm:"size:255;not null;unique" json:"title"`
-	Caption   string     `gorm:"not null;unique" json:"caption"`
+	Title     string     `gorm:"size:255;not null;" json:"title"`
+	Caption   string     `gorm:"not null;" json:"caption"`
 	PhotoUrl  string     `gorm:"not null;" json:"photo_url"`
 	UserID    UUIDString `gorm:"not null" json:"user_id"`
 	CreatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
